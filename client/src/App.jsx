@@ -11,7 +11,11 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Shows an error in the banner (and logs it in the console)
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const tasksPerPage = 10;
+
+  // Shows an error in the banner
   function showError(err) {
     console.error(err);
     setError(err.message);
@@ -27,7 +31,6 @@ function App() {
       } catch (err) {
         showError(err);
       } finally {
-        // Stop loading whether it worked or failed
         setLoading(false);
       }
     }
@@ -41,31 +44,34 @@ function App() {
       setError("");
       const newTodo = await createTodo(title);
       setTodos((prev) => [newTodo, ...prev]);
+
+      // Show the first page after adding a task
+      setCurrentPage(1);
     } catch (err) {
       showError(err);
     }
   }
 
-  // Replace the edited todo with the updated version from the server
- // Replace the edited todo with the updated version from the server
-async function handleUpdate(id, data) {
-  try {
-    setError("");
-    const updated = await updateTodo(id, data);
+  // Update a todo
+  async function handleUpdate(id, data) {
+    try {
+      setError("");
+      const updated = await updateTodo(id, data);
 
-    setTodos((prev) =>
-      prev.map((todo) => (todo._id === id ? updated : todo))
-    );
-  } catch (err) {
-    showError(err);
+      setTodos((prev) =>
+        prev.map((todo) => (todo._id === id ? updated : todo))
+      );
+    } catch (err) {
+      showError(err);
+    }
   }
-}
 
   // Remove one todo
   async function handleDelete(id) {
     try {
       setError("");
       await deleteTodo(id);
+
       setTodos((prev) => prev.filter((todo) => todo._id !== id));
     } catch (err) {
       showError(err);
@@ -83,16 +89,48 @@ async function handleUpdate(id, data) {
       }
 
       setTodos((prev) => prev.filter((todo) => !todo.completed));
+
+      setCurrentPage(1);
     } catch (err) {
       showError(err);
     }
   }
 
-  // Only the todos that match the selected filter
+  // Only todos matching the selected filter
   const filteredTodos = todos.filter(FILTERS[filter].test);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredTodos.length / tasksPerPage);
+
+  const startIndex = (currentPage - 1) * tasksPerPage;
+
+  const currentTodos = filteredTodos.slice(
+    startIndex,
+    startIndex + tasksPerPage
+  );
 
   // "1 task" or "3 tasks"
   const taskWord = filteredTodos.length === 1 ? "task" : "tasks";
+
+  // Change filter
+  function handleFilterChange(newFilter) {
+    setFilter(newFilter);
+    setCurrentPage(1);
+  }
+
+  // Go to next page
+  function handleNextPage() {
+    if (currentPage < totalPages) {
+      setCurrentPage((page) => page + 1);
+    }
+  }
+
+  // Go to previous page
+  function handlePreviousPage() {
+    if (currentPage > 1) {
+      setCurrentPage((page) => page - 1);
+    }
+  }
 
   // Decide what to show in the list area
   function renderTodos() {
@@ -102,6 +140,7 @@ async function handleUpdate(id, data) {
 
     if (filteredTodos.length === 0) {
       let message = "You're all caught up. Add a task above.";
+
       if (filter === "done") {
         message = "Nothing completed yet";
       }
@@ -115,16 +154,41 @@ async function handleUpdate(id, data) {
     }
 
     return (
-      <ul className="todo-list">
-        {filteredTodos.map((todo) => (
-          <TodoItem
-            key={todo._id}
-            todo={todo}
-            onUpdate={handleUpdate}
-            onDelete={handleDelete}
-          />
-        ))}
-      </ul>
+      <>
+        <ul className="todo-list">
+          {currentTodos.map((todo) => (
+            <TodoItem
+              key={todo._id}
+              todo={todo}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+            />
+          ))}
+        </ul>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </>
     );
   }
 
@@ -133,13 +197,14 @@ async function handleUpdate(id, data) {
       <Sidebar
         todos={todos}
         filter={filter}
-        onFilter={setFilter}
+        onFilter={handleFilterChange}
         onClearDone={handleClearDone}
       />
 
       <main className="panel content">
         <header className="content-header">
           <h2>{FILTERS[filter].label}</h2>
+
           <span className="content-count">
             {filteredTodos.length} {taskWord}
           </span>
@@ -150,7 +215,11 @@ async function handleUpdate(id, data) {
         {error && (
           <div className="error" role="alert">
             <span>{error}</span>
-            <button onClick={() => setError("")} aria-label="Dismiss">
+
+            <button
+              onClick={() => setError("")}
+              aria-label="Dismiss"
+            >
               ×
             </button>
           </div>

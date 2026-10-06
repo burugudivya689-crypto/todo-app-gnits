@@ -515,3 +515,40 @@ h2 {
     font-size: 22px;
   }
 }
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 24px;
+  padding: 16px 0;
+}
+
+.pagination button {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+}
