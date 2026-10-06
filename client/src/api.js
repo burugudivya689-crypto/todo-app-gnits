@@ -1,12 +1,14 @@
-const API_URL = "/api/todos";
+const API_URL = "https://todo-app-gnits-mj0c.onrender.com/api/todos";
 
 const request = async (url, options) => {
   const res = await fetch(url, options);
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
+
   if (!res.ok) {
     throw new Error(data?.message || `Request failed: ${res.status}`);
   }
+
   return data;
 };
 
